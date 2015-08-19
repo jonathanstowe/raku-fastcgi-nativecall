@@ -3,12 +3,6 @@ use NativeCall;
 
 class FCGX_Request is repr('CPointer') { }
 
-sub FCGX_Init()
-is native('fcgi') returns int32 { ... }
-
-sub FCGX_InitRequest(FCGX_Request $request, int32 $sock, int32 $flags)
-is native('fcgi') returns int32 { ... }
-
 sub FCGX_OpenSocket(Str $path, int32 $backlog)
 is native('fcgi') returns int32 { ... }
 
