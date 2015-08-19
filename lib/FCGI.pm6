@@ -17,22 +17,22 @@ sub library is cached {
 }
 
 sub FCGX_OpenSocket(Str $path, int32 $backlog)
-is native(library) returns int32 { ... }
+is native(&library) returns int32 { ... }
 
 sub FCGX_Accept_r(FCGX_Request $fcgx_req)
-is native(library) returns int32 { ... }
+is native(&library) returns int32 { ... }
 
 sub XS_Init(int32 $sock)
-is native(library) returns FCGX_Request { ... }
+is native(&library) returns FCGX_Request { ... }
 
 sub XS_Print(Str $str, FCGX_Request $request)
-is native(library) returns int32 { ... }
+is native(&library) returns int32 { ... }
 
 sub XS_set_populate_env_callback(&callback (Str, Str))
-is native(library) { ... }
+is native(&library) { ... }
 
 sub XS_populate_env(FCGX_Request $request)
-is native(library) { ... }
+is native(&library) { ... }
 
 class FCGI {
 	has FCGX_Request $!fcgx_req;
