@@ -13,6 +13,7 @@ class Build is Panda::Builder {
 		mkdir("$blib/lib");
 		my $here = $*CWD;
 		chdir($ext);
+		shell("./configure");
 		shell("make");
 		chdir($here);
 		cp("$ext/fcgi.so", "$blib/lib/fcgi.so");
