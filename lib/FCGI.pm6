@@ -3,7 +3,7 @@ use NativeCall;
 
 class FCGX_Request is repr('CPointer') { }
 
-sub library is cached {
+sub library {
 	my Str $path;
 	my $libname = 'fcgi.so';
 	for @*INC {
