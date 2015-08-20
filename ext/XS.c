@@ -46,3 +46,10 @@ XS_populate_env(FCGX_Request *request)
 		populate_env_callback(p, p1);
 	}
 }
+
+void
+XS_Finish(FCGX_Request *request)
+{
+	FCGX_Finish_r(request);
+	free(request);
+}

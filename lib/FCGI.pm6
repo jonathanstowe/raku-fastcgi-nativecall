@@ -39,6 +39,9 @@ is native(&library) { ... }
 sub XS_populate_env(FCGX_Request $request)
 is native(&library) { ... }
 
+sub XS_Finish(FCGX_Request $request)
+is native(&library) { ... }
+
 class FCGI {
 	has FCGX_Request $!fcgx_req;
 	my %env;
@@ -72,6 +75,14 @@ class FCGI {
 	method Print(Str $content) {
 		XS_Print($content, $!fcgx_req);
 	}
-}	
+
+	method Finish() {
+		XS_Finish($!fcgx_req);
+	}
+
+	method DESTROY {
+		self.Finish();
+	}
+}
 
 # vim: ft=perl6
