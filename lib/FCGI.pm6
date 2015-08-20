@@ -4,16 +4,21 @@ use NativeCall;
 class FCGX_Request is repr('CPointer') { }
 
 sub library {
-	my Str $path;
-	my $libname = 'fcgi.so';
-	for @*INC {
-		my $inc-path = $_.IO.path.subst(/ ['file#' || 'inst#'] /, '');
-		my $path = $*SPEC.catfile($inc-path, $libname);
-		if $path.IO ~~ :f {
-			return $path;
+	state Str $path;
+	unless $path {
+		my $libname = 'fcgi.so';
+		for @*INC {
+			my $inc-path = $_.IO.path.subst(/ ['file#' || 'inst#'] /, '');
+			$path = $*SPEC.catfile($inc-path, $libname);
+			if $path.IO ~~ :f {
+				last;
+			}
+		}
+		unless $path {
+			die "Unable to locate library: $libname";
 		}
 	}
-	die "Unable to locate library: $libname";
+	$path;
 }
 
 sub FCGX_OpenSocket(Str $path, int32 $backlog)
