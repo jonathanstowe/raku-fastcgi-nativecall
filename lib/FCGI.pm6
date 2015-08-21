@@ -30,6 +30,9 @@ is native(&library) returns int32 { ... }
 sub XS_Init(int32 $sock)
 is native(&library) returns FCGX_Request { ... }
 
+sub XS_Accept(FCGX_Request $request)
+is native(&library) returns int32 { ... }
+
 sub XS_Print(Str $str, FCGX_Request $request)
 is native(&library) returns int32 { ... }
 
@@ -67,8 +70,7 @@ class FCGI {
 
 	method Accept() {
 		%env = ();
-		my $ret = FCGX_Accept_r($!fcgx_req);
-		XS_populate_env($!fcgx_req);
+		my $ret = XS_Accept($!fcgx_req);
 		$ret;
 	}
 

@@ -3,6 +3,12 @@
 #include <assert.h>
 #include "fcgiapp.h"
 
+FCGX_Request * XS_Init(int);
+int XS_Accept(FCGX_Request *);
+int XS_Print(const char *, FCGX_Request *);
+void XS_set_populate_env_callback(void (*)(char *, char*));
+void XS_populate_env(FCGX_Request *);
+
 void (* populate_env_callback)(char *, char *);
 
 FCGX_Request *
@@ -15,6 +21,17 @@ XS_Init(int sock)
 	FCGX_Init();
 	FCGX_InitRequest(request, sock, 0);
 	return request;
+}
+
+int
+XS_Accept(FCGX_Request *request)
+{
+	int ret;
+	ret = FCGX_Accept_r(request);
+	if (ret < 0)
+		return ret;
+	XS_populate_env(request);
+	return ret;
 }
 
 int
