@@ -6,6 +6,7 @@
 FCGX_Request * XS_Init(int);
 int XS_Accept(FCGX_Request *);
 int XS_Print(const char *, FCGX_Request *);
+void XS_Flush(FCGX_Request *);
 void XS_set_populate_env_callback(void (*)(char *, char*));
 void XS_populate_env(FCGX_Request *);
 
@@ -40,6 +41,16 @@ XS_Print(const char *str, FCGX_Request *request)
 	int ret;
 	ret = FCGX_PutStr(str, strlen(str), request->out);
 	return ret;
+}
+
+void
+XS_Flush(FCGX_Request *request)
+{
+	if (!request || !request->out || !request->err)
+		return;
+
+	FCGX_FFlush(request->out);
+	FCGX_FFlush(request->err);
 }
 
 void

@@ -33,6 +33,9 @@ is native(&library) returns int32 { ... }
 sub XS_Print(Str $str, FCGX_Request $request)
 is native(&library) returns int32 { ... }
 
+sub XS_Flush(FCGX_Request $request)
+is native(&library) { ... }
+
 sub XS_set_populate_env_callback(&callback (Str, Str))
 is native(&library) { ... }
 
@@ -75,6 +78,10 @@ class FCGI {
 
 	method Print(Str $content) {
 		XS_Print($content, $!fcgx_req);
+	}
+
+	method Flush() {
+		XS_Flush($!fcgx_req);
 	}
 
 	method Finish() {
