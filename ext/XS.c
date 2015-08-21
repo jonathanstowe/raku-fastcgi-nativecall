@@ -6,6 +6,7 @@
 FCGX_Request * XS_Init(int);
 int XS_Accept(FCGX_Request *);
 int XS_Print(const char *, FCGX_Request *);
+char * XS_Read(int, FCGX_Request *);
 void XS_Flush(FCGX_Request *);
 void XS_set_populate_env_callback(void (*)(char *, char*));
 void XS_populate_env(FCGX_Request *);
@@ -43,6 +44,18 @@ XS_Print(const char *str, FCGX_Request *request)
 		return -1;
 	ret = FCGX_PutStr(str, strlen(str), request->out);
 	return ret;
+}
+
+char *
+XS_Read(int n, FCGX_Request *request)
+{
+	int read;
+	char *buf = malloc(n + 1);
+	if (!buf)
+		abort();
+	read = FCGX_GetStr(buf, n, request->in);
+	buf[read] = '\0';
+	return buf;
 }
 
 void

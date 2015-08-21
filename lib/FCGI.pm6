@@ -1,7 +1,7 @@
 use v6;
 use NativeCall;
 
-class FCGX_Request is repr('CPointer') { }
+class FCGX_Request is Pointer is repr('CPointer') { }
 
 sub library {
 	state Str $path;
@@ -33,6 +33,9 @@ is native(&library) returns int32 { ... }
 sub XS_Print(Str $str, FCGX_Request $request)
 is native(&library) returns int32 { ... }
 
+sub XS_Read(int32 $n, FCGX_Request $request)
+is native(&library) returns Pointer { ... }
+
 sub XS_Flush(FCGX_Request $request)
 is native(&library) { ... }
 
@@ -41,6 +44,8 @@ is native(&library) { ... }
 
 sub XS_Finish(FCGX_Request $request)
 is native(&library) { ... }
+
+sub free(Pointer $ptr) is native { ... }
 
 class FCGI {
 	has FCGX_Request $!fcgx_req;
@@ -80,6 +85,13 @@ class FCGI {
 		XS_Print($content, $!fcgx_req);
 	}
 
+	method Read(Int $length) {
+		my $ptr = XS_Read($length, $!fcgx_req);
+		my $ret = nativecast(Str, $ptr);
+		free($ptr);
+		$ret;
+	}
+
 	method Flush() {
 		XS_Flush($!fcgx_req);
 	}
@@ -89,7 +101,6 @@ class FCGI {
 	}
 
 	method DESTROY {
-		sub free(FCGX_Request $ptr) is native { ... }
 		self.Finish();
 		free($!fcgx_req);
 	}
