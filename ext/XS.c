@@ -39,6 +39,8 @@ int
 XS_Print(const char *str, FCGX_Request *request)
 {
 	int ret;
+	if (!request->out)
+		return -1;
 	ret = FCGX_PutStr(str, strlen(str), request->out);
 	return ret;
 }
