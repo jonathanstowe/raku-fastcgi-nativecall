@@ -68,6 +68,11 @@ class FCGI {
 		return FCGX_OpenSocket($path, $backlog);
 	}
 
+        our sub CloseSocket(Int $socket) {
+                sub close(int32 $d) is native { ... }
+                close($socket);
+        }
+
 	method Accept() {
 		%env = ();
 		my $ret = XS_Accept($!fcgx_req);
