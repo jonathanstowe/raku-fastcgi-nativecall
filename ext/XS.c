@@ -51,5 +51,4 @@ void
 XS_Finish(FCGX_Request *request)
 {
 	FCGX_Finish_r(request);
-	free(request);
 }

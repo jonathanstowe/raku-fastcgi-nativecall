@@ -81,7 +81,9 @@ class FCGI {
 	}
 
 	method DESTROY {
+		sub free(FCGX_Request $ptr) is native { ... }
 		self.Finish();
+		free($!fcgx_req);
 	}
 }
 
