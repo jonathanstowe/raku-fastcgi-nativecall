@@ -1,13 +1,13 @@
-# FCGI #
+# FastCGI::NativeCall #
 
 This is an implementation of FastCGI for Perl 6 using NativeCall
 
 ## Example ##
 
-	use FCGI;
+	use FastCGI::NativeCall;
 
-	my $sock = FCGI::OpenSocket("/var/www/run/example.sock", 5);
-	my $fcgi = FCGI.new($sock);
+	my $sock = FastCGI::NativeCall::OpenSocket("/var/www/run/example.sock", 5);
+	my $fcgi = FastCGI::NativeCall.new($sock);
 
 	my $count = 0;
 

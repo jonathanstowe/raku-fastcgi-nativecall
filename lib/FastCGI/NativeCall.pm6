@@ -47,7 +47,7 @@ is native(&library) { ... }
 
 sub free(Pointer $ptr) is native { ... }
 
-class FCGI {
+class FastCGI::NativeCall {
 	has FCGX_Request $!fcgx_req;
 	my %env;
 
