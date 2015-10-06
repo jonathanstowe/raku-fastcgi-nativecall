@@ -71,10 +71,10 @@ class FastCGI::NativeCall {
 		return FCGX_OpenSocket($path, $backlog);
 	}
 
-        our sub CloseSocket(Int $socket) {
-                sub close(int32 $d) is native { ... }
-                close($socket);
-        }
+	our sub CloseSocket(Int $socket) {
+		sub close(int32 $d) is native { ... }
+		close($socket);
+	}
 
 	method Accept() {
 		%env = ();
