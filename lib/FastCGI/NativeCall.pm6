@@ -3,45 +3,28 @@ use NativeCall;
 
 class FCGX_Request is Pointer is repr('CPointer') { }
 
-sub library {
-	state Str $path;
-	unless $path {
-		my $libname = 'fcgi.so';
-		for @*INC {
-			my $inc-path = $_.IO.path.subst(/ ['file#' || 'inst#'] /, '');
-			my $check = $*SPEC.catfile($inc-path, $libname);
-			if $check.IO ~~ :f {
-				$path = $check;
-				last;
-			}
-		}
-		unless $path {
-			die "Unable to locate library: $libname";
-		}
-	}
-	$path;
-}
+my constant HELPER = %?RESOURCES<libraries/fcgi>.Str;
 
 sub FCGX_OpenSocket(Str $path, int32 $backlog)
-is native(&library) returns int32 { ... }
+is native(HELPER) returns int32 { ... }
 
 sub XS_Init(int32 $sock)
-is native(&library) returns FCGX_Request { ... }
+is native(HELPER) returns FCGX_Request { ... }
 
 sub XS_Accept(FCGX_Request $request, &populate_env_callback (Str, Str))
-is native(&library) returns int32 { ... }
+is native(HELPER) returns int32 { ... }
 
 sub XS_Print(Str $str, FCGX_Request $request)
-is native(&library) returns int32 { ... }
+is native(HELPER) returns int32 { ... }
 
 sub XS_Read(int32 $n, FCGX_Request $request)
-is native(&library) returns Pointer { ... }
+is native(HELPER) returns Pointer { ... }
 
 sub XS_Flush(FCGX_Request $request)
-is native(&library) { ... }
+is native(HELPER) { ... }
 
 sub XS_Finish(FCGX_Request $request)
-is native(&library) { ... }
+is native(HELPER) { ... }
 
 sub free(Pointer $ptr) is native { ... }
 
