@@ -4,3 +4,4 @@ ext/config.log
 ext/config.status
 blib/
 Makefile
+.precomp
