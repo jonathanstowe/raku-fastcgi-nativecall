@@ -1,23 +1,25 @@
-use v6;
-use Panda::Common;
-use Panda::Builder;
+use v6.c;
 use Shell::Command;
+use LibraryMake;
 
-class Build is Panda::Builder {
-	method build($dir) {
-		my Str $ext = "$dir/ext";
-		my Str $blib = "$dir/blib";
-		rm_f("$ext/fcgi.so");
-		rm_rf($blib);
-		mkdir($blib);
-		mkdir("$blib/lib");
+class Build {
+	method build($workdir) {
+        my Str $srcdir = $workdir.IO.child('ext').Str;
+        my Str $destdir = "$workdir/lib/../resources/libraries";
+        mkpath $destdir;
+        my %vars = get-vars($destdir);
+        %vars<fcgi> = $*VM.platform-library-name('fcgi'.IO).Str;
+        process-makefile($srcdir, %vars);
 		my $here = $*CWD;
-		chdir($ext);
-		if "$ext/fcgi_config.h".IO !~~ :f {
+		chdir($srcdir);
+		if $srcdir.IO.child('fcgi_config.h') !~~ :f {
 			shell("./configure");
 		}
-		shell("make");
+		shell(%vars<MAKE>);
 		chdir($here);
-		cp("$ext/fcgi.so", "$blib/lib/fcgi.so");
 	}
+    method isa($what) {
+        return True if $what.^name eq 'Panda::Builder';
+        callsame;
+    }
 }
