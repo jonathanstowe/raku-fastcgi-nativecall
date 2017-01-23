@@ -5,6 +5,7 @@
     "description" : "An implementation of FastCGI using NativeCall",
     "depends" : [ ],
     "build-depends" : [ "LibraryMake" ],
+    "resources" : [ "libraries/fcgi" ],
     "provides" : {
         "FastCGI::NativeCall" : "lib/FastCGI/NativeCall.pm6"
     },
