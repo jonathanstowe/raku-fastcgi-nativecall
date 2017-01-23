@@ -1,4 +1,5 @@
 {
+    "perl" : "6.c",
     "name" : "FastCGI::NativeCall",
     "version" : "0.0.1",
     "author" : "github:carbin",
