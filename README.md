@@ -2,6 +2,8 @@
 
 This is an implementation of FastCGI for Perl 6 using NativeCall
 
+[![Build Status](https://travis-ci.org/jonathanstowe/p6-fcgi.svg?branch=master)](https://travis-ci.org/jonathanstowe/p6-fcgi)
+
 ## Synopsis
 
 ```perl6
