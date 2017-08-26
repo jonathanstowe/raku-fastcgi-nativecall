@@ -1,4 +1,5 @@
-use v6;
+use v6.c;
+
 use NativeCall;
 
 class FCGX_Request is Pointer is repr('CPointer') { }
@@ -40,9 +41,14 @@ class FastCGI::NativeCall {
 		%env{$key} = $value;
 	}
 
-	method new(Int $sock) {
+	multi method new(Int $sock) {
 		return self.bless(:$sock);
 	}
+
+    multi method new(Str :$path, Int :$backlog = 16 ) {
+        my $sock = OpenSocket($path, $backlog);
+        self.new($sock);
+    }
 
 	submethod BUILD(:$sock) {
 		$!fcgx_req = XS_Init($sock);
@@ -60,11 +66,16 @@ class FastCGI::NativeCall {
 	method Accept() {
 		self.Finish();
 		%env = ();
-		$accept_mutex.lock();
-		my $ret = XS_Accept($!fcgx_req, &populate_env);
-		$accept_mutex.unlock();
+        my $ret;
+		$accept_mutex.protect( -> {
+		    $ret = XS_Accept($!fcgx_req, &populate_env);
+        });
 		$ret;
 	}
+
+    method accept(--> Bool) {
+        self.Accept() >= 0;;
+    }
 
 	method Print(Str $content) {
 		XS_Print($content, $!fcgx_req);
