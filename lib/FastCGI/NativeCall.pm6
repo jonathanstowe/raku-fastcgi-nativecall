@@ -53,8 +53,10 @@ class FastCGI::NativeCall {
         self.new($sock);
     }
 
-    submethod BUILD(:$sock) {
-        $!fcgx_req = XS_Init($sock);
+    has $!sock;
+
+    submethod BUILD(:$!sock) {
+        $!fcgx_req = XS_Init($!sock);
     }
 
     our sub OpenSocket(Str $path, Int $backlog) {
@@ -64,6 +66,11 @@ class FastCGI::NativeCall {
     our sub CloseSocket(Int $socket) {
         sub close(int32 $d) is native { ... }
         close($socket);
+    }
+
+    method close() {
+        self.Finish();
+        CloseSocket($!sock);
     }
 
     method Accept() {
