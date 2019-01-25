@@ -46,7 +46,7 @@ efficient.
 
 =head2 method new
 
-    method new(Str :$path, Int :$backlog = 16)
+    multi method new(Str :$path, Int :$backlog = 16)
 
 The constructor must be supplied with the path where the listening Unix domain
 socket will be created, the location must be accessible to both your program
@@ -58,12 +58,15 @@ an error, you may want to adjust this (in concert with the configuration
 of your host HTTP server,) to achieve an acceptable level of throughput
 for your application.
 
-    method new(Int $socket)
+    multi method new(Int $socket)
+    multi method new(Int :$socket)
+
 
 This is the original constructor which must be passed the file descriptor of
 an already opened and listening socket.  A suitable socket can be created
 with the C<OpenSocket> helper described below, or you may have got one from
-another source (for instance when using the Apache mod_fcgid.)
+another source (for instance when using the Apache mod_fcgid.) The original
+positional form is deprecated in favour of the one with a named argument.
 
 =head2 method Accept
 
@@ -154,26 +157,19 @@ class FastCGI::NativeCall {
     class FCGX_Request is Pointer is repr('CPointer') { }
 
 
-    sub FCGX_OpenSocket(Str $path, int32 $backlog)
-    is native(HELPER) returns int32 { ... }
+    sub FCGX_OpenSocket(Str $path, int32 $backlog --> int32 ) is native(HELPER) { ... }
 
-    sub XS_Init(int32 $sock)
-    is native(HELPER) returns FCGX_Request { ... }
+    sub XS_Init(int32 $sock --> FCGX_Request ) is native(HELPER) { ... }
 
-    sub XS_Accept(FCGX_Request $request, &populate_env_callback (Str, Str))
-    is native(HELPER) returns int32 { ... }
+    sub XS_Accept(FCGX_Request $request, &populate_env_callback (Str, Str) --> int32 ) is native(HELPER) { ... }
 
-    sub XS_Print(Str $str, FCGX_Request $request)
-    is native(HELPER) returns int32 { ... }
+    sub XS_Print(Str $str, FCGX_Request $request --> int32 ) is native(HELPER) { ... }
 
-    sub XS_Read(int32 $n, FCGX_Request $request)
-    is native(HELPER) returns Pointer { ... }
+    sub XS_Read(int32 $n, FCGX_Request $request --> Pointer ) is native(HELPER) { ... }
 
-    sub XS_Flush(FCGX_Request $request)
-    is native(HELPER) { ... }
+    sub XS_Flush(FCGX_Request $request) is native(HELPER) { ... }
 
-    sub XS_Finish(FCGX_Request $request)
-    is native(HELPER) { ... }
+    sub XS_Finish(FCGX_Request $request) is native(HELPER) { ... }
 
     sub free(Pointer $ptr) is native { ... }
 
@@ -197,7 +193,12 @@ class FastCGI::NativeCall {
     }
 
     multi method new(Int :$sock!) {
+        DEPRECATED('socket parameter');
         self.bless(:$sock);
+    }
+
+    multi method new(Int :$socket!) {
+        self.bless( sock => $socket );
     }
 
     multi method new(Str :$path!, Int :$backlog = 16 ) {
@@ -205,14 +206,14 @@ class FastCGI::NativeCall {
         self.bless(:$sock);
     }
 
-    has $!sock;
+    has int32 $!sock;
 
     submethod BUILD(:$!sock!) {
         $!fcgx_req = XS_Init($!sock);
     }
 
-    our sub OpenSocket(Str $path, Int $backlog) {
-        return FCGX_OpenSocket($path, $backlog);
+    our sub OpenSocket(Str $path, Int $backlog --> Int) {
+        FCGX_OpenSocket($path, $backlog);
     }
 
     our sub CloseSocket(Int $socket) {
@@ -225,7 +226,7 @@ class FastCGI::NativeCall {
         CloseSocket($!sock);
     }
 
-    method Accept() {
+    method Accept( --> Int ) {
         self.Finish();
         %env = ();
         my $ret;

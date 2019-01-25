@@ -11,10 +11,10 @@ sub sock-path(--> Str) {
 
 subtest {
     my $path = sock-path();
-    my $sock = FastCGI::NativeCall::OpenSocket($path, 5);
+    my $socket = FastCGI::NativeCall::OpenSocket($path, 5);
     ok $path.IO ~~ :e, 'opened socket';
 
-    my $fcgi = FastCGI::NativeCall.new(:$sock);
+    my $fcgi = FastCGI::NativeCall.new(:$socket);
     ok $fcgi, 'created object';
     lives-ok { $fcgi.close }, "close";
 
