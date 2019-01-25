@@ -28,7 +28,7 @@ socket so you don't need to create your own socket and the script above becomes 
 ```perl6
 use FastCGI::NativeCall;
 
-my $fcgi = FastCGI::NativeCall.new(sock => 0 );
+my $fcgi = FastCGI::NativeCall.new(socket => 0 );
 
 my $count = 0;
 
@@ -87,7 +87,7 @@ If you have any suggestions/bugs etc please report them at https://github.com/jo
 This is free software please see the [LICENSE](LICENSE) file in the distribution.
 
 © carbin 2015
-© Jonathan Stowe 2016, 2017
+© Jonathan Stowe 2016 - 2019
 
 The FastCGI C application library is distributed under its own license.
 See "ext/LICENSE.TERMS" for the license.
