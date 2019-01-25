@@ -1,4 +1,5 @@
-use v6.c;
+use v6;
+
 use Test;
 use FastCGI::NativeCall;
 
@@ -21,6 +22,7 @@ subtest {
         unlink($path);
     }
 }, "original interface";
+
 subtest {
 
     my $path = sock-path();

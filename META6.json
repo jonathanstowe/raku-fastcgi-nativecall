@@ -4,7 +4,7 @@
   "support": {
     "source": "git://github.com/jonathanstowe/p6-fcgi.git"
   },
-  "perl": "6.c",
+  "perl": "6.*",
   "resources": [
     "libraries/fcgi"
   ],
@@ -14,18 +14,14 @@
   ],
   "author": "github:carbin",
   "auth": "github:carbin",
-  "depends": [
-    
-  ],
+  "depends": [ ],
   "tags": [
     "fcgi",
     "fastcgi",
     "http"
   ],
   "license": "ISC",
-  "test-depends": [
-    
-  ],
+  "test-depends": [ ],
   "provides": {
     "FastCGI::NativeCall": "lib/FastCGI/NativeCall.pm6"
   },

@@ -1,4 +1,4 @@
-use v6.c;
+use v6;
 
 use NativeCall;
 
@@ -19,7 +19,7 @@ my $fcgi = FastCGI::NativeCall.new(path => "/tmp/fastcgi.sock", backlog => 32 );
 my $count = 0;
 
 while $fcgi.accept() {
-	say $fcgi.env;
+    say $fcgi.env;
     $fcgi.header(Content-Type => "text/html");
     $fcgi.Print("{ ++$count }");
 }
