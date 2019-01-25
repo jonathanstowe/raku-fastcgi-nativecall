@@ -63,7 +63,7 @@ for your application.
 This is the original constructor which must be passed the file descriptor of
 an already opened and listening socket.  A suitable socket can be created
 with the C<OpenSocket> helper described below, or you may have got one from
-another source.
+another source (for instance when using the Apache mod_fcgid.)
 
 =head2 method Accept
 
