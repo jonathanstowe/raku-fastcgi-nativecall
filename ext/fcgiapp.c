@@ -610,7 +610,7 @@ int FCGX_VFPrintF(FCGX_Stream *stream, const char *format, va_list arg)
                                 break;
                             case 'L':
                                 lDoubleArg = va_arg(arg, LONG_DOUBLE);
-                                /* XXX Need to check for the presence of 
+                                /* XXX Need to check for the presence of
                                  * frexpl() and use it if available */
 				                frexp((double) lDoubleArg, &exp);
                                 break;
@@ -947,7 +947,7 @@ static void SetError(FCGX_Stream *stream, int FCGI_errno)
     if(stream->FCGI_errno == 0) {
         stream->FCGI_errno = FCGI_errno;
     }
-  
+
     stream->isClosed = TRUE;
 }
 
@@ -1690,7 +1690,7 @@ static void FillBuffProc(FCGX_Stream *stream)
         memcpy(((char *)(&header)) + headerLen, stream->rdNext, count);
         headerLen += count;
         stream->rdNext += count;
-        if(headerLen < sizeof(header)) {
+        if((long unsigned int)headerLen < sizeof(header)) {
             continue;
 	};
         headerLen = 0;
@@ -2033,7 +2033,7 @@ void FCGX_Finish_r(FCGX_Request *reqDataPtr)
 
 void FCGX_Free(FCGX_Request * request, int close)
 {
-    if (request == NULL) 
+    if (request == NULL)
         return;
 
     FCGX_FreeStream(&request->in);
@@ -2320,7 +2320,7 @@ void FCGX_SetExitStatus(int status, FCGX_Stream *stream)
 }
 
 
-int 
+int
 FCGX_Attach(FCGX_Request * r)
 {
     r->detached = FALSE;
@@ -2328,7 +2328,7 @@ FCGX_Attach(FCGX_Request * r)
 }
 
 
-int 
+int
 FCGX_Detach(FCGX_Request * r)
 {
     if (r->ipcFd <= 0)

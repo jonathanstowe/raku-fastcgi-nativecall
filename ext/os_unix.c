@@ -124,7 +124,7 @@ static void installSignalHandler(int signo, const struct sigaction * act, int fo
 
     sigaction(signo, NULL, &sa);
 
-    if (force || sa.sa_handler == SIG_DFL) 
+    if (force || sa.sa_handler == SIG_DFL)
     {
         sigaction(signo, act, NULL);
     }
@@ -239,11 +239,11 @@ static int OS_BuildSockAddrUn(const char *bindPath,
     int bindPathLen = strlen(bindPath);
 
 #ifdef HAVE_SOCKADDR_UN_SUN_LEN /* 4.3BSD Reno and later: BSDI, DEC */
-    if(bindPathLen >= sizeof(servAddrPtr->sun_path)) {
+    if((long unsigned int)bindPathLen >= sizeof(servAddrPtr->sun_path)) {
         return -1;
     }
 #else                           /* 4.3 BSD Tahoe: Solaris, HPUX, DEC, ... */
-    if(bindPathLen > sizeof(servAddrPtr->sun_path)) {
+    if((long unsigned int)bindPathLen > sizeof(servAddrPtr->sun_path)) {
         return -1;
     }
 #endif
@@ -285,7 +285,7 @@ union SockAddrUnion {
 int OS_CreateLocalIpcFd(const char *bindPath, int backlog)
 {
     int listenSock, servLen;
-    union   SockAddrUnion sa;  
+    union   SockAddrUnion sa;
     int	    tcp = FALSE;
     unsigned long tcp_ia = 0;
     char    *tp;
@@ -748,7 +748,7 @@ int OS_Close(int fd, int shutdown_ok)
     /*
      * shutdown() the send side and then read() from client until EOF
      * or a timeout expires.  This is done to minimize the potential
-     * that a TCP RST will be sent by our TCP stack in response to 
+     * that a TCP RST will be sent by our TCP stack in response to
      * receipt of additional data from the client.  The RST would
      * cause the client to discard potentially useful response data.
      */
@@ -764,7 +764,7 @@ int OS_Close(int fd, int shutdown_ok)
 
             FD_ZERO(&rfds);
 
-            do 
+            do
             {
                 FD_SET(fd, &rfds);
                 tv.tv_sec = 2;
@@ -918,8 +918,8 @@ int OS_DoIo(struct timeval *tmo)
     return 0;
 }
 
-/* 
- * Not all systems have strdup().  
+/*
+ * Not all systems have strdup().
  * @@@ autoconf should determine whether or not this is needed, but for now..
  */
 static char * str_dup(const char * str)
@@ -1001,8 +1001,8 @@ static int AcquireLock(int sock, int fail_on_intr)
 
         if (fcntl(sock, F_SETLKW, &lock) != -1)
             return 0;
-    } while (errno == EINTR 
-             && ! fail_on_intr 
+    } while (errno == EINTR
+             && ! fail_on_intr
              && ! shutdownPending);
 
     return -1;
@@ -1167,9 +1167,9 @@ int OS_Accept(int listen_sock, int fail_on_intr, const char *webServerAddrs)
                 /* There's a window here */
 
                 socket = accept(listen_sock, (struct sockaddr *)&sa, &len);
-            } while (socket < 0 
-                     && errno == EINTR 
-                     && ! fail_on_intr 
+            } while (socket < 0
+                     && errno == EINTR
+                     && ! fail_on_intr
                      && ! shutdownPending);
 
             if (socket < 0) {
@@ -1177,7 +1177,7 @@ int OS_Accept(int listen_sock, int fail_on_intr, const char *webServerAddrs)
                     int errnoSave = errno;
 
                     ReleaseLock(listen_sock);
-                    
+
                     if (! shutdownPending) {
                         errno = errnoSave;
                     }

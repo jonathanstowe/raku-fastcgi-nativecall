@@ -2,7 +2,7 @@
   "children": [
     {
       "name": "examples",
-      "purpose": null,
+      "purpose": "examples",
       "children": [
         {
           "name": "ngingx.conf",
@@ -24,20 +24,12 @@
       "name": "META6.json"
     },
     {
-      "purpose": null,
+      "purpose": "extension",
       "type": "directory",
       "children": [
         {
-          "name": "config.log",
-          "type": "file"
-        },
-        {
           "name": "fcgi_config.h.in",
           "type": "file"
-        },
-        {
-          "type": "file",
-          "name": "fcgi_config.h"
         },
         {
           "type": "file",
@@ -49,10 +41,6 @@
         },
         {
           "name": "os_unix.c",
-          "type": "file"
-        },
-        {
-          "name": "config.status",
           "type": "file"
         },
         {
@@ -87,7 +75,7 @@
       "name": "ext"
     },
     {
-      "purpose": null,
+      "purpose": "tests",
       "children": [
         {
           "type": "file",
@@ -127,7 +115,7 @@
           "children": [
             {
               "type": "file",
-              "name": "NativeCall.pm6"
+              "name": "NativeCall.rakumod"
             }
           ]
         }

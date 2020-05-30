@@ -1,3 +1,7 @@
+v0.0.7		Sat 30 May 17:21:15 BST 2020
+	* Remove unwanted files from CPAN tarball
+	* Quieten some warnings on latest gcc
+	* Raku renaming
 v0.0.6      Fri 25 Jan 09:52:52 GMT 2019
     * Spring clean and upload to CPAN
 v0.0.5		Tue Oct 10 09:11:34 2017 +0100 

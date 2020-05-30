@@ -6,7 +6,7 @@ use NativeCall;
 
 =head1 NAME
 
-FastCGI::NativeCall - An implementation of FastCGI for Perl 6 using NativeCall
+FastCGI::NativeCall - An implementation of FastCGI for Raku using NativeCall
 
 =head1 SYNOPSIS
 
@@ -36,7 +36,7 @@ modules,) by most common HTTP server software (such as Apache, nginx,
 lighthttpd and so forth.)
 
 This module provides a simple mechanism to create FastCGI server
-applications in Perl 6.
+applications in Raku.
 
 The FastCGI servers are single threaded, but with good support from
 the front end server and tuning of the configuration it can be quite
@@ -276,4 +276,4 @@ class FastCGI::NativeCall {
     }
 }
 
-# vim: ft=perl6
+# vim: ft=raku
