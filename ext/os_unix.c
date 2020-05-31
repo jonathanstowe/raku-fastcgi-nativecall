@@ -16,10 +16,6 @@
  *  snapper@openmarket.com
  */
 
-#ifndef lint
-static const char rcsid[] = "$Id: os_unix.c,v 1.38 2003/06/22 00:16:43 robs Exp $";
-#endif /* not lint */
-
 #include "fcgi_config.h"
 
 #include <sys/types.h>
@@ -42,6 +38,7 @@ static const char rcsid[] = "$Id: os_unix.c,v 1.38 2003/06/22 00:16:43 robs Exp 
 #include <sys/time.h>
 #include <sys/un.h>
 #include <signal.h>
+#include <poll.h>
 
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
@@ -64,7 +61,7 @@ static const char rcsid[] = "$Id: os_unix.c,v 1.38 2003/06/22 00:16:43 robs Exp 
 #endif
 
 /*
- * This structure holds an entry for each oustanding async I/O operation.
+ * This structure holds an entry for each outstanding async I/O operation.
  */
 typedef struct {
     OS_AsyncProc procPtr;	    /* callout completion procedure */
@@ -103,6 +100,9 @@ static int volatile maxFd = -1;
 static int shutdownPending = FALSE;
 static int shutdownNow = FALSE;
 
+static int libfcgiOsClosePollTimeout = 2000;
+static int libfcgiIsAfUnixKeeperPollTimeout = 2000;
+
 void OS_ShutdownPending()
 {
     shutdownPending = TRUE;
@@ -124,8 +124,7 @@ static void installSignalHandler(int signo, const struct sigaction * act, int fo
 
     sigaction(signo, NULL, &sa);
 
-    if (force || sa.sa_handler == SIG_DFL)
-    {
+    if (force || sa.sa_handler == SIG_DFL || sa.sa_handler == SIG_IGN) {
         sigaction(signo, act, NULL);
     }
 }
@@ -142,6 +141,8 @@ static void OS_InstallSignalHandlers(int force)
 
     sa.sa_handler = OS_Sigusr1Handler;
     installSignalHandler(SIGUSR1, &sa, force);
+    
+    installSignalHandler(SIGTERM, &sa, 0);
 }
 
 /*
@@ -168,6 +169,16 @@ int OS_LibInit(int stdioFds[3])
     if(libInitialized)
         return 0;
 
+    char *libfcgiOsClosePollTimeoutStr = getenv( "LIBFCGI_OS_CLOSE_POLL_TIMEOUT" );
+    if(libfcgiOsClosePollTimeoutStr) {
+        libfcgiOsClosePollTimeout = atoi(libfcgiOsClosePollTimeoutStr);
+    }
+
+    char *libfcgiIsAfUnixKeeperPollTimeoutStr = getenv( "LIBFCGI_IS_AF_UNIX_KEEPER_POLL_TIMEOUT" );
+    if(libfcgiIsAfUnixKeeperPollTimeoutStr) {
+        libfcgiIsAfUnixKeeperPollTimeout = atoi(libfcgiIsAfUnixKeeperPollTimeoutStr);
+    }
+
     asyncIoTable = (AioInfo *)malloc(asyncIoTableSize * sizeof(AioInfo));
     if(asyncIoTable == NULL) {
         errno = ENOMEM;
@@ -181,7 +192,7 @@ int OS_LibInit(int stdioFds[3])
     FD_ZERO(&readFdSetPost);
     FD_ZERO(&writeFdSetPost);
 
-    OS_InstallSignalHandlers(TRUE);
+    OS_InstallSignalHandlers(FALSE);
 
     libInitialized = TRUE;
 
@@ -239,11 +250,11 @@ static int OS_BuildSockAddrUn(const char *bindPath,
     int bindPathLen = strlen(bindPath);
 
 #ifdef HAVE_SOCKADDR_UN_SUN_LEN /* 4.3BSD Reno and later: BSDI, DEC */
-    if((long unsigned int)bindPathLen >= sizeof(servAddrPtr->sun_path)) {
+    if(bindPathLen >= (int)sizeof(servAddrPtr->sun_path)) {
         return -1;
     }
 #else                           /* 4.3 BSD Tahoe: Solaris, HPUX, DEC, ... */
-    if((long unsigned int)bindPathLen > sizeof(servAddrPtr->sun_path)) {
+    if(bindPathLen > (int)sizeof(servAddrPtr->sun_path)) {
         return -1;
     }
 #endif
@@ -284,32 +295,41 @@ union SockAddrUnion {
  */
 int OS_CreateLocalIpcFd(const char *bindPath, int backlog)
 {
-    int listenSock, servLen;
-    union   SockAddrUnion sa;
-    int	    tcp = FALSE;
+    int listenSock, len;
+    union   SockAddrUnion sa;  
     unsigned long tcp_ia = 0;
     char    *tp;
     short   port = 0;
     char    host[MAXPATHLEN];
 
-    strcpy(host, bindPath);
-    if((tp = strchr(host, ':')) != 0) {
-	*tp++ = 0;
-	if((port = atoi(tp)) == 0) {
+    len = strlen(bindPath);
+    if (len >= MAXPATHLEN) {
+    	fprintf(stderr, "bind path too long (>=%d): %s\n", 
+    			MAXPATHLEN, bindPath);
+    	exit(1);
+    }
+    memcpy(host, bindPath, len + 1);
+    
+    tp = strchr(host, ':');
+    if (tp) {
+		*tp = 0;
+		port = atoi(++tp);
+		if (port == 0) {
 	    *--tp = ':';
-	 } else {
-	    tcp = TRUE;
 	 }
     }
-    if(tcp) {
+    
+    if (port) {
       if (!*host || !strcmp(host,"*")) {
 	tcp_ia = htonl(INADDR_ANY);
-      } else {
+		} 
+    	else {
 	tcp_ia = inet_addr(host);
 	if (tcp_ia == INADDR_NONE) {
-	  struct hostent * hep;
-	  hep = gethostbyname(host);
-	  if ((!hep) || (hep->h_addrtype != AF_INET || !hep->h_addr_list[0])) {
+				struct hostent * hep = gethostbyname(host);
+				if ((!hep) || (hep->h_addrtype != AF_INET
+						|| !hep->h_addr_list[0])) 
+				{
 	    fprintf(stderr, "Cannot resolve host name %s -- exiting!\n", host);
 	    exit(1);
 	  }
@@ -321,21 +341,22 @@ int OS_CreateLocalIpcFd(const char *bindPath, int backlog)
 	  tcp_ia = ((struct in_addr *) (hep->h_addr))->s_addr;
 	}
       }
-    }
 
-    if(tcp) {
 	listenSock = socket(AF_INET, SOCK_STREAM, 0);
         if(listenSock >= 0) {
             int flag = 1;
             if(setsockopt(listenSock, SOL_SOCKET, SO_REUSEADDR,
-                          (char *) &flag, sizeof(flag)) < 0) {
+					(char *) &flag, sizeof(flag)) < 0) 
+			{
                 fprintf(stderr, "Can't set SO_REUSEADDR.\n");
 	        exit(1001);
 	    }
 	}
-    } else {
+    } 
+    else {
 	listenSock = socket(AF_UNIX, SOCK_STREAM, 0);
     }
+    
     if(listenSock < 0) {
         return -1;
     }
@@ -343,21 +364,24 @@ int OS_CreateLocalIpcFd(const char *bindPath, int backlog)
     /*
      * Bind the listening socket.
      */
-    if(tcp) {
+    if (port) {
 	memset((char *) &sa.inetVariant, 0, sizeof(sa.inetVariant));
 	sa.inetVariant.sin_family = AF_INET;
 	sa.inetVariant.sin_addr.s_addr = tcp_ia;
 	sa.inetVariant.sin_port = htons(port);
-	servLen = sizeof(sa.inetVariant);
-    } else {
+		len = sizeof(sa.inetVariant);
+    } 
+    else {
 	unlink(bindPath);
-	if(OS_BuildSockAddrUn(bindPath, &sa.unixVariant, &servLen)) {
+		if (OS_BuildSockAddrUn(bindPath, &sa.unixVariant, &len)) {
 	    fprintf(stderr, "Listening socket's path name is too long.\n");
 	    exit(1000);
 	}
     }
-    if(bind(listenSock, (struct sockaddr *) &sa.unixVariant, servLen) < 0
-       || listen(listenSock, backlog) < 0) {
+    
+    if (bind(listenSock, (struct sockaddr *) &sa.unixVariant, len) < 0
+    		|| listen(listenSock, backlog) < 0) 
+    {
 	perror("bind/listen");
         exit(errno);
     }
@@ -388,35 +412,43 @@ int OS_CreateLocalIpcFd(const char *bindPath, int backlog)
 int OS_FcgiConnect(char *bindPath)
 {
     union   SockAddrUnion sa;
-    int servLen, resultSock;
+    int len, resultSock;
     int connectStatus;
     char    *tp;
     char    host[MAXPATHLEN];
     short   port = 0;
-    int	    tcp = FALSE;
 
-    strcpy(host, bindPath);
-    if((tp = strchr(host, ':')) != 0) {
-	*tp++ = 0;
-	if((port = atoi(tp)) == 0) {
+    len = strlen(bindPath);
+    if (len >= MAXPATHLEN) {
+    	fprintf(stderr, "bind path too long (>=%d): %s\n", 
+    			MAXPATHLEN, bindPath);
+    	exit(1);
+    }
+    memcpy(host, bindPath, len + 1);
+    
+    tp = strchr(host, ':');
+    if (tp) {
+    	*tp = 0;
+    	port = atoi(++tp);
+    	if (port == 0) {
 	    *--tp = ':';
-	 } else {
-	    tcp = TRUE;
 	 }
     }
-    if(tcp == TRUE) {
-	struct	hostent	*hp;
-	if((hp = gethostbyname((*host ? host : "localhost"))) == NULL) {
-	    fprintf(stderr, "Unknown host: %s\n", bindPath);
+    
+    if (port) {
+		struct hostent *hp = gethostbyname(*host ? host : "localhost");
+		if (hp == NULL) {
+		    fprintf(stderr, "Unknown host: %s\n", host);
 	    exit(1000);
 	}
 	sa.inetVariant.sin_family = AF_INET;
 	memcpy(&sa.inetVariant.sin_addr, hp->h_addr, hp->h_length);
 	sa.inetVariant.sin_port = htons(port);
-	servLen = sizeof(sa.inetVariant);
+		len = sizeof(sa.inetVariant);
 	resultSock = socket(AF_INET, SOCK_STREAM, 0);
-    } else {
-	if(OS_BuildSockAddrUn(bindPath, &sa.unixVariant, &servLen)) {
+    } 
+    else {
+		if (OS_BuildSockAddrUn(bindPath, &sa.unixVariant, &len)) {
 	    fprintf(stderr, "Listening socket's path name is too long.\n");
 	    exit(1000);
 	}
@@ -425,10 +457,11 @@ int OS_FcgiConnect(char *bindPath)
 
     ASSERT(resultSock >= 0);
     connectStatus = connect(resultSock, (struct sockaddr *) &sa.unixVariant,
-                             servLen);
+                             len);
     if(connectStatus >= 0) {
         return resultSock;
-    } else {
+    } 
+    else {
         /*
          * Most likely (errno == ENOENT || errno == ECONNREFUSED)
          * and no FCGI application server is running.
@@ -748,7 +781,7 @@ int OS_Close(int fd, int shutdown_ok)
     /*
      * shutdown() the send side and then read() from client until EOF
      * or a timeout expires.  This is done to minimize the potential
-     * that a TCP RST will be sent by our TCP stack in response to
+     * that a TCP RST will be sent by our TCP stack in response to 
      * receipt of additional data from the client.  The RST would
      * cause the client to discard potentially useful response data.
      */
@@ -757,19 +790,16 @@ int OS_Close(int fd, int shutdown_ok)
     {
         if (shutdown(fd, 1) == 0)
         {
-            struct timeval tv;
-            fd_set rfds;
+            struct pollfd pfd;
             int rv;
             char trash[1024];
 
-            FD_ZERO(&rfds);
+            pfd.fd = fd;
+            pfd.events = POLLIN;
 
-            do
+            do 
             {
-                FD_SET(fd, &rfds);
-                tv.tv_sec = 2;
-                tv.tv_usec = 0;
-                rv = select(fd + 1, &rfds, NULL, NULL, &tv);
+                rv = poll(&pfd, 1, libfcgiOsClosePollTimeout);
             }
             while (rv > 0 && read(fd, trash, sizeof(trash)) > 0);
         }
@@ -918,17 +948,17 @@ int OS_DoIo(struct timeval *tmo)
     return 0;
 }
 
-/*
- * Not all systems have strdup().
+/* 
+ * Not all systems have strdup().  
  * @@@ autoconf should determine whether or not this is needed, but for now..
  */
 static char * str_dup(const char * str)
 {
-    char * sdup = (char *) malloc(strlen(str) + 1);
-
-    if (sdup)
-        strcpy(sdup, str);
-
+	int len = strlen(str) + 1;
+    char * sdup = (char *) malloc(len);
+    if (sdup) {
+        memcpy(sdup, str, len);
+    }
     return sdup;
 }
 
@@ -1001,8 +1031,8 @@ static int AcquireLock(int sock, int fail_on_intr)
 
         if (fcntl(sock, F_SETLKW, &lock) != -1)
             return 0;
-    } while (errno == EINTR
-             && ! fail_on_intr
+    } while (errno == EINTR 
+             && ! fail_on_intr 
              && ! shutdownPending);
 
     return -1;
@@ -1119,13 +1149,11 @@ static int is_reasonable_accept_errno (const int error)
  */
 static int is_af_unix_keeper(const int fd)
 {
-    struct timeval tval = { READABLE_UNIX_FD_DROP_DEAD_TIMEVAL };
-    fd_set read_fds;
+    struct pollfd pfd;
+    pfd.fd = fd;
+    pfd.events = POLLIN;
 
-    FD_ZERO(&read_fds);
-    FD_SET(fd, &read_fds);
-
-    return select(fd + 1, &read_fds, NULL, NULL, &tval) >= 0 && FD_ISSET(fd, &read_fds);
+    return poll(&pfd, 1, libfcgiIsAfUnixKeeperPollTimeout) >= 0 && (pfd.revents & POLLIN);
 }
 
 /*
@@ -1161,15 +1189,15 @@ int OS_Accept(int listen_sock, int fail_on_intr, const char *webServerAddrs)
 #ifdef HAVE_SOCKLEN
                 socklen_t len = sizeof(sa);
 #else
-                int len = sizeof(sa);
+                unsigned int len = sizeof(sa);
 #endif
                 if (shutdownPending) break;
                 /* There's a window here */
 
                 socket = accept(listen_sock, (struct sockaddr *)&sa, &len);
-            } while (socket < 0
-                     && errno == EINTR
-                     && ! fail_on_intr
+            } while (socket < 0 
+                     && errno == EINTR 
+                     && ! fail_on_intr 
                      && ! shutdownPending);
 
             if (socket < 0) {
@@ -1177,7 +1205,7 @@ int OS_Accept(int listen_sock, int fail_on_intr, const char *webServerAddrs)
                     int errnoSave = errno;
 
                     ReleaseLock(listen_sock);
-
+                    
                     if (! shutdownPending) {
                         errno = errnoSave;
                     }
@@ -1202,6 +1230,7 @@ int OS_Accept(int listen_sock, int fail_on_intr, const char *webServerAddrs)
                     break;
 
                 close(socket);
+                socket = -1;
             }  /* socket >= 0 */
         }  /* for(;;) */
 
@@ -1261,7 +1290,7 @@ int OS_IsFcgi(int sock)
 #ifdef HAVE_SOCKLEN
     socklen_t len = sizeof(sa);
 #else
-    int len = sizeof(sa);
+    unsigned int len = sizeof(sa);
 #endif
 
     errno = 0;

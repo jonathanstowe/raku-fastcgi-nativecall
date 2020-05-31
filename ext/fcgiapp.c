@@ -10,9 +10,6 @@
  * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
  *
  */
-#ifndef lint
-static const char rcsid[] = "$Id: fcgiapp.c,v 1.35 2003/06/22 00:16:43 robs Exp $";
-#endif /* not lint */
 
 #include <assert.h>
 #include <errno.h>
@@ -41,10 +38,6 @@ static const char rcsid[] = "$Id: fcgiapp.c,v 1.35 2003/06/22 00:16:43 robs Exp 
 
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
-#endif
-
-#ifdef _WIN32
-#define DLLAPI  __declspec(dllexport)
 #endif
 
 #include "fcgimisc.h"
@@ -411,7 +404,7 @@ static void CopyAndAdvance(char **destPtr, char **srcPtr, int n);
 int FCGX_VFPrintF(FCGX_Stream *stream, const char *format, va_list arg)
 {
     char *f, *fStop, *percentPtr, *p, *fmtBuffPtr, *buffPtr;
-    int op, performedOp, sizeModifier, buffCount = 0, __attribute__((__unused__)) buffLen, specifierLength;
+    int op, performedOp, sizeModifier, buffCount = 0, buffLen, specifierLength;
     int fastPath, n, auxBuffLen = 0, buffReqd, minWidth, precision, exp;
     char *auxBuffPtr = NULL;
     int streamCount = 0;
@@ -421,8 +414,10 @@ int FCGX_VFPrintF(FCGX_Stream *stream, const char *format, va_list arg)
     int intArg;
     short shortArg;
     long longArg;
+    long long longLongArg;
     unsigned unsignedArg;
     unsigned long uLongArg;
+    unsigned long long uLongLongArg;
     unsigned short uShortArg;
     char *charPtrArg = NULL;
     void *voidPtrArg;
@@ -465,6 +460,16 @@ int FCGX_VFPrintF(FCGX_Stream *stream, const char *format, va_list arg)
                 op = *(percentPtr + 1);
                 switch(op) {
 	            case 'l':
+                        if(op == 'l' && *(percentPtr + 2) == 'l') {
+                            sizeModifier = 'L';
+                            op = *(percentPtr + 3);
+                            fmtBuff[1] = 'l';
+                            fmtBuff[2] = 'l';
+                            fmtBuff[3] = (char) op;
+                            fmtBuff[4] = '\0';
+                            specifierLength = 4;
+                        }
+			break;
 	            case 'L':
                     case 'h':
                         sizeModifier = op;
@@ -562,6 +567,11 @@ int FCGX_VFPrintF(FCGX_Stream *stream, const char *format, va_list arg)
                  */
                 switch(*p) {
 	            case 'l':
+                        if(*p == 'l' && *(p + 1) == 'l') {
+                            sizeModifier = 'L';
+                            CopyAndAdvance(&fmtBuffPtr, &p, 2);
+                        }
+                        break;
                     case 'L':
                     case 'h':
                         sizeModifier = *p;
@@ -610,7 +620,7 @@ int FCGX_VFPrintF(FCGX_Stream *stream, const char *format, va_list arg)
                                 break;
                             case 'L':
                                 lDoubleArg = va_arg(arg, LONG_DOUBLE);
-                                /* XXX Need to check for the presence of
+                                /* XXX Need to check for the presence of 
                                  * frexpl() and use it if available */
 				                frexp((double) lDoubleArg, &exp);
                                 break;
@@ -657,7 +667,7 @@ int FCGX_VFPrintF(FCGX_Stream *stream, const char *format, va_list arg)
              * to be set up: op, sizeModifier, arg, buffPtr, fmtBuff.
              * When fastPath == FALSE and op == 's' or 'f', the argument
              * has been read into charPtrArg, doubleArg, or lDoubleArg.
-             * The statement produces the boolean performedOp, TRUE iff
+             * The statement produces the boolean performedOp, TRUE if
              * the op/sizeModifier were executed and argument consumed;
              * if performedOp, the characters written into buffPtr[]
              * and the character count buffCount (== EOF meaning error).
@@ -678,6 +688,11 @@ int FCGX_VFPrintF(FCGX_Stream *stream, const char *format, va_list arg)
 	                case 'l':
                             longArg = va_arg(arg, long);
                             sprintf(buffPtr, fmtBuff, longArg);
+                            buffCount = strlen(buffPtr);
+                            break;
+                        case 'L':
+                            longLongArg = va_arg(arg, long long);
+                            sprintf(buffPtr, fmtBuff, longLongArg);
                             buffCount = strlen(buffPtr);
                             break;
 	                case 'h':
@@ -702,6 +717,11 @@ int FCGX_VFPrintF(FCGX_Stream *stream, const char *format, va_list arg)
 	                case 'l':
                             uLongArg = va_arg(arg, unsigned long);
 			    sprintf(buffPtr, fmtBuff, uLongArg);
+                            buffCount = strlen(buffPtr);
+                            break;
+                        case 'L':
+                            uLongLongArg = va_arg(arg, unsigned long long);
+                            sprintf(buffPtr, fmtBuff, uLongLongArg);
                             buffCount = strlen(buffPtr);
                             break;
                         case 'h':
@@ -947,7 +967,7 @@ static void SetError(FCGX_Stream *stream, int FCGI_errno)
     if(stream->FCGI_errno == 0) {
         stream->FCGI_errno = FCGI_errno;
     }
-
+  
     stream->isClosed = TRUE;
 }
 
@@ -1454,13 +1474,14 @@ static void EmptyBuffProc(struct FCGX_Stream *stream, int doClose)
 static int ProcessManagementRecord(int type, FCGX_Stream *stream)
 {
     FCGX_Stream_Data *data = (FCGX_Stream_Data *)stream->data;
-    ParamsPtr paramsPtr = NewParams(3);
+    ParamsPtr paramsPtr;
     char **pPtr;
     char response[64]; /* 64 = 8 + 3*(1+1+14+1)* + padding */
     char *responseP = &response[FCGI_HEADER_LEN];
     char *name, value = '\0';
     int len, paddedLen;
     if(type == FCGI_GET_VALUES) {
+        paramsPtr = NewParams(3);
         ReadParams(paramsPtr, stream);
         if((FCGX_GetError(stream) != 0) || (data->contentLen != 0)) {
             FreeParams(&paramsPtr);
@@ -1468,7 +1489,10 @@ static int ProcessManagementRecord(int type, FCGX_Stream *stream)
         }
         for (pPtr = paramsPtr->vec; pPtr < paramsPtr->cur; pPtr++) {
             name = *pPtr;
-            *(strchr(name, '=')) = '\0';
+            char *tmpPtr = strchr(name, '=');
+            if(tmpPtr != NULL) {
+                *tmpPtr = '\0';
+            }
             if(strcmp(name, FCGI_MAX_CONNS) == 0) {
                 value = '1';
             } else if(strcmp(name, FCGI_MAX_REQS) == 0) {
@@ -1486,16 +1510,17 @@ static int ProcessManagementRecord(int type, FCGX_Stream *stream)
         }
         len = responseP - &response[FCGI_HEADER_LEN];
         paddedLen = AlignInt8(len);
-        *((FCGI_Header *) response)
-            = MakeHeader(FCGI_GET_VALUES_RESULT, FCGI_NULL_REQUEST_ID,
-                         len, paddedLen - len);
+        FCGI_Header *header = (FCGI_Header *)response;
+        *header = MakeHeader(FCGI_GET_VALUES_RESULT, FCGI_NULL_REQUEST_ID,
+                             len, paddedLen - len);
         FreeParams(&paramsPtr);
     } else {
         paddedLen = len = sizeof(FCGI_UnknownTypeBody);
-        ((FCGI_UnknownTypeRecord *) response)->header
+        FCGI_UnknownTypeRecord *utr = (FCGI_UnknownTypeRecord *) response;
+        utr->header
             = MakeHeader(FCGI_UNKNOWN_TYPE, FCGI_NULL_REQUEST_ID,
                          len, 0);
-        ((FCGI_UnknownTypeRecord *) response)->body
+        utr->body
             = MakeUnknownTypeBody(type);
     }
     if (write_it_all(data->reqDataPtr->ipcFd, response, FCGI_HEADER_LEN + paddedLen) < 0) {
@@ -1690,7 +1715,7 @@ static void FillBuffProc(FCGX_Stream *stream)
         memcpy(((char *)(&header)) + headerLen, stream->rdNext, count);
         headerLen += count;
         stream->rdNext += count;
-        if((long unsigned int)headerLen < sizeof(header)) {
+        if(headerLen < (int)sizeof(header)) {
             continue;
 	};
         headerLen = 0;
@@ -2013,19 +2038,8 @@ void FCGX_Finish_r(FCGX_Request *reqDataPtr)
     if (reqDataPtr->in) {
         close |= FCGX_FClose(reqDataPtr->err);
         close |= FCGX_FClose(reqDataPtr->out);
-        close |= FCGX_GetError(reqDataPtr->in);
 
-        /* discard any remaining data in input stream on persistent connections */
-        if (!close && !reqDataPtr->in->isClosed && reqDataPtr->keepConnection) {
-            FCGX_Stream *stream = reqDataPtr->in;
-
-            do {
-                stream->rdNext = stream->stop;
-                stream->fillBuffProc(stream);
-            } while (!stream->isClosed);
-
-            close |= FCGX_GetError(stream);
-        }
+	close |= FCGX_GetError(reqDataPtr->in);
     }
 
     FCGX_Free(reqDataPtr, close);
@@ -2033,7 +2047,7 @@ void FCGX_Finish_r(FCGX_Request *reqDataPtr)
 
 void FCGX_Free(FCGX_Request * request, int close)
 {
-    if (request == NULL)
+    if (request == NULL) 
         return;
 
     FCGX_FreeStream(&request->in);
@@ -2078,7 +2092,7 @@ int FCGX_InitRequest(FCGX_Request *request, int sock, int flags)
  *
  * FCGX_Init --
  *
- *      Initilize the FCGX library.  This is called by FCGX_Accept()
+ *      Initialize the FCGX library.  This is called by FCGX_Accept()
  *      but must be called by the user when using FCGX_Accept_r().
  *
  * Results:
@@ -2320,7 +2334,7 @@ void FCGX_SetExitStatus(int status, FCGX_Stream *stream)
 }
 
 
-int
+int 
 FCGX_Attach(FCGX_Request * r)
 {
     r->detached = FALSE;
@@ -2328,7 +2342,7 @@ FCGX_Attach(FCGX_Request * r)
 }
 
 
-int
+int 
 FCGX_Detach(FCGX_Request * r)
 {
     if (r->ipcFd <= 0)
