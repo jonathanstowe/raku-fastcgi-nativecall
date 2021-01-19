@@ -404,7 +404,7 @@ static void CopyAndAdvance(char **destPtr, char **srcPtr, int n);
 int FCGX_VFPrintF(FCGX_Stream *stream, const char *format, va_list arg)
 {
     char *f, *fStop, *percentPtr, *p, *fmtBuffPtr, *buffPtr;
-    int op, performedOp, sizeModifier, buffCount = 0, buffLen, specifierLength;
+    int op, performedOp, sizeModifier, buffCount = 0, __attribute__((__unused__)) buffLen, specifierLength;
     int fastPath, n, auxBuffLen = 0, buffReqd, minWidth, precision, exp;
     char *auxBuffPtr = NULL;
     int streamCount = 0;
@@ -620,7 +620,7 @@ int FCGX_VFPrintF(FCGX_Stream *stream, const char *format, va_list arg)
                                 break;
                             case 'L':
                                 lDoubleArg = va_arg(arg, LONG_DOUBLE);
-                                /* XXX Need to check for the presence of 
+                                /* XXX Need to check for the presence of
                                  * frexpl() and use it if available */
 				                frexp((double) lDoubleArg, &exp);
                                 break;
@@ -967,7 +967,7 @@ static void SetError(FCGX_Stream *stream, int FCGI_errno)
     if(stream->FCGI_errno == 0) {
         stream->FCGI_errno = FCGI_errno;
     }
-  
+
     stream->isClosed = TRUE;
 }
 
@@ -2047,7 +2047,7 @@ void FCGX_Finish_r(FCGX_Request *reqDataPtr)
 
 void FCGX_Free(FCGX_Request * request, int close)
 {
-    if (request == NULL) 
+    if (request == NULL)
         return;
 
     FCGX_FreeStream(&request->in);
@@ -2334,7 +2334,7 @@ void FCGX_SetExitStatus(int status, FCGX_Stream *stream)
 }
 
 
-int 
+int
 FCGX_Attach(FCGX_Request * r)
 {
     r->detached = FALSE;
@@ -2342,7 +2342,7 @@ FCGX_Attach(FCGX_Request * r)
 }
 
 
-int 
+int
 FCGX_Detach(FCGX_Request * r)
 {
     if (r->ipcFd <= 0)
