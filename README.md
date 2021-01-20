@@ -2,7 +2,8 @@
 
 This is an implementation of FastCGI for Raku using NativeCall
 
-[![Build Status](https://travis-ci.org/jonathanstowe/p6-fcgi.svg?branch=master)](https://travis-ci.org/jonathanstowe/p6-fcgi)
+![Build Status](https://github.com/jonathanstowe/raku-fastcgi-nativecall/workflows/CI/badge.svg)
+
 
 ## Synopsis
 
@@ -78,7 +79,7 @@ If you have any suggestions/bugs etc please report them at https://github.com/jo
 This is free software please see the [LICENSE](LICENSE) file in the distribution.
 
 © carbin 2015
-© Jonathan Stowe 2016 - 2020
+© Jonathan Stowe 2016 - 2021
 
 The FastCGI C application library is distributed under its own license.
 See "ext/LICENSE.TERMS" for the license.
