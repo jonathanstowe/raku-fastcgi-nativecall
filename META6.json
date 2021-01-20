@@ -1,6 +1,6 @@
 {
   "name": "FastCGI::NativeCall",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "auth": "github:jonathanstowe",
   "api": "1.0",
   "description": "An implementation of FastCGI using NativeCall",
@@ -10,22 +10,36 @@
     "bugtracker": "https://github.com/jonathanstowe/raku-fastcgi-nativecall/issues"
   },
   "perl": "6.*",
+  "raku": "6.*",
   "resources": [
     "libraries/fcgi"
   ],
-  "build-depends": [
-    "LibraryMake",
-	"Shell::Command"
-  ],
+  "depends": {
+     "build" : {
+        "requires" : [
+           "Distribution::Builder::MakeFromJSON:ver<0.6+>"
+        ]
+     },
+     "runtime": {
+        "requires": [
+        ]
+     }
+  },
+  "builder": "Distribution::Builder::MakeFromJSON",
+  "build" : {
+     "src-dir" : "ext",
+     "configure-bin" : "./configure",
+     "makefile-variables" : {
+        "fcgi": {"resource": "libraries/fcgi"}
+     }
+  },
   "author": "github:carbin",
-  "depends": [ ],
   "tags": [
     "fcgi",
     "fastcgi",
     "http"
   ],
   "license": "ISC",
-  "test-depends": [ ],
   "provides": {
     "FastCGI::NativeCall": "lib/FastCGI/NativeCall.rakumod"
   },

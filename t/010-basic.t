@@ -37,4 +37,4 @@ subtest {
     }
 }, "new interface";
 
-# vim: ft=perl6
+# vim: ft=raku
