@@ -247,7 +247,14 @@ class FastCGI::NativeCall {
     }
 
     multi method header(%header) {
-        my $header = %header.pairs.map( -> ( :$key, :$value ) { "$key: $value" }).join("\r\n") ~ "\r\n\r\n";
+        my $header = %header.pairs.map( -> ( :$key, :$value ) {
+            if $key ~~ m:i/^ 'Set-Cookie' $/ {
+                $value.map({ "$key: $_" }).join("\r\n");
+            }
+            else {
+                "$key: $value"
+            }
+        }).join("\r\n") ~ "\r\n\r\n";
         self.Print($header);
     }
 
