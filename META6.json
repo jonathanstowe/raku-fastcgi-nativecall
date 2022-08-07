@@ -2,7 +2,7 @@
   "build-depends": [
   ],
   "author": "github:carbin",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "auth": "zef:jonathanstowe",
   "name": "FastCGI::NativeCall",
   "provides": {
