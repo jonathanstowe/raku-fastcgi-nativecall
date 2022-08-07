@@ -1,51 +1,46 @@
 {
+  "build-depends": [
+  ],
+  "author": "github:carbin",
+  "version": "0.0.9",
+  "auth": "zef:jonathanstowe",
   "name": "FastCGI::NativeCall",
-  "version": "0.0.8",
-  "auth": "github:jonathanstowe",
-  "api": "1.0",
-  "description": "An implementation of FastCGI using NativeCall",
-  "source-url": "https://github.com/jonathanstowe/raku-fastcgi-nativecall.git",
-  "support": {
-    "source": "https://github.com/jonathanstowe/raku-fastcgi-nativecall.git",
-    "bugtracker": "https://github.com/jonathanstowe/raku-fastcgi-nativecall/issues"
+  "provides": {
+    "FastCGI::NativeCall": "lib/FastCGI/NativeCall.rakumod"
   },
-  "perl": "6.*",
+  "api": "1.0",
+  "depends": {
+    "runtime": {
+      "requires": [
+      ]
+    },
+    "build": {
+      "requires": [
+        "Distribution::Builder::MakeFromJSON:ver<0.6+>"
+      ]
+    }
+  },
+  "license": "ISC",
+  "authors": [
+    "carbin",
+    "Jonathan Stowe"
+  ],
+  "source-url": "https://github.com/jonathanstowe/raku-fastcgi-nativecall.git",
+  "description": "An implementation of FastCGI using NativeCall",
   "raku": "6.*",
   "resources": [
     "libraries/fcgi"
   ],
-  "depends": {
-     "build" : {
-        "requires" : [
-           "Distribution::Builder::MakeFromJSON:ver<0.6+>"
-        ]
-     },
-     "runtime": {
-        "requires": [
-        ]
-     }
-  },
-  "builder": "Distribution::Builder::MakeFromJSON",
-  "build" : {
-     "src-dir" : "ext",
-     "configure-bin" : "./configure",
-     "makefile-variables" : {
-        "fcgi": {"resource": "libraries/fcgi"}
-     }
-  },
-  "author": "github:carbin",
+  "meta-version": "1",
+  "test-depends": [
+  ],
   "tags": [
     "fcgi",
     "fastcgi",
     "http"
   ],
-  "license": "ISC",
-  "provides": {
-    "FastCGI::NativeCall": "lib/FastCGI/NativeCall.rakumod"
-  },
-  "meta-version": "1",
-  "authors": [
-	"carbin",
-    "Jonathan Stowe"
-  ]
+  "support": {
+    "source": "https://github.com/jonathanstowe/raku-fastcgi-nativecall.git",
+    "bugtracker": "https://github.com/jonathanstowe/raku-fastcgi-nativecall/issues"
+  }
 }
