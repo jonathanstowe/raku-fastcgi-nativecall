@@ -1,8 +1,6 @@
 {
-  "build-depends": [
-  ],
   "author": "github:carbin",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "auth": "zef:jonathanstowe",
   "name": "FastCGI::NativeCall",
   "provides": {
@@ -20,6 +18,14 @@
       ]
     }
   },
+  "builder": "Distribution::Builder::MakeFromJSON",
+  "build" : {
+     "src-dir" : "ext",
+     "configure-bin" : "./configure",
+     "makefile-variables" : {
+        "fcgi": {"resource": "libraries/fcgi"}
+     }
+  },
   "license": "ISC",
   "authors": [
     "carbin",
@@ -32,8 +38,6 @@
     "libraries/fcgi"
   ],
   "meta-version": "1",
-  "test-depends": [
-  ],
   "tags": [
     "fcgi",
     "fastcgi",
