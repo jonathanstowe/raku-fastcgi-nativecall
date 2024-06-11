@@ -1,3 +1,5 @@
+v0.0.12		Tue 11 Jun 12:30:12 BST 2024
+	* Fix for misuse of %*RESOURCES from niner
 v0.0.11		Mon  8 Aug 10:52:33 BST 2022
 	* Fix build
 v0.0.10		Sun  7 Aug 17:09:08 BST 2022
