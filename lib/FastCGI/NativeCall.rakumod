@@ -152,7 +152,7 @@ to use the C<close> method instead.
 
 
 class FastCGI::NativeCall {
-    my constant HELPER = %?RESOURCES<libraries/fcgi>.Str;
+    my constant HELPER = %?RESOURCES<libraries/fcgi>;
 
     class FCGX_Request is Pointer is repr('CPointer') { }
 
